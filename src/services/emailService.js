@@ -3,12 +3,15 @@ import nodemailer from 'nodemailer';
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 465,
-  secure: true, // true for 465, false for other ports
+  port: parseInt(process.env.SMTP_PORT) || 465,
+  secure: (process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) === 465 : true),
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
-  }
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 5000,
+  socketTimeout: 10000
 });
 
 const sendEmail = async (to, subject, text, html) => {
