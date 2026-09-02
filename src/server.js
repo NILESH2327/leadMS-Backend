@@ -15,6 +15,26 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Serverless MongoDB connection middleware
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI environment variable is missing');
+  }
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log('MongoDB Connected');
+};
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database Connection Error:', err.message);
+    res.status(500).json({ message: 'Database Connection Error', error: err.message });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -30,13 +50,6 @@ app.get('/', (req, res) => {
 // Error Handling
 app.use(notFound);
 app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
 
 // Start server only if not running in a serverless environment (like Vercel)
 if (process.env.NODE_ENV !== 'production') {
