@@ -8,7 +8,8 @@ import { register,
   forgotPassword, 
   resetPassword, 
   inviteTeamMember, 
-  acceptInvitation 
+  acceptInvitation,
+  getMe
  } from '../controllers/authController.js';
 import { protect, authorize  } from '../middlewares/authMiddleware.js';
 
@@ -22,6 +23,7 @@ router.post('/reset-password', resetPassword);
 router.post('/accept-invitation', acceptInvitation);
 
 // Protected routes
+router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
 router.post('/invite', protect, authorize('vendor'), inviteTeamMember);
 

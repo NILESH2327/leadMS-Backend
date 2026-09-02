@@ -10,6 +10,13 @@ const generateTokens = (id) => {
   return { accessToken, refreshToken };
 };
 
+const getRequestDomain = (req) => {
+  if (process.env.CLIENT_URL) return process.env.CLIENT_URL;
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  return `${protocol}://${host}`;
+};
+
 export const register = async (req, res, next) => {
   try {
     const { email, password, role, firstName, lastName } = req.body;
@@ -31,7 +38,7 @@ export const register = async (req, res, next) => {
     await Token.create({ userId: user._id, token: tokenStr, type: 'email-confirmation' });
     
     // Send email
-    const domain = process.env.CLIENT_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const domain = getRequestDomain(req);
     await sendConfirmationEmail(user.email, tokenStr, domain);
     
     res.status(201).json({ message: 'Registration successful. Please check your email to verify your account.' });
@@ -189,7 +196,7 @@ export const forgotPassword = async (req, res, next) => {
     const tokenStr = crypto.randomBytes(32).toString('hex');
     await Token.create({ userId: user._id, token: tokenStr, type: 'password-reset' });
 
-    const domain = process.env.CLIENT_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const domain = getRequestDomain(req);
     await sendPasswordResetEmail(user.email, tokenStr, domain);
 
     res.status(200).json({ message: 'Password reset link sent' });
@@ -244,7 +251,7 @@ export const inviteTeamMember = async (req, res, next) => {
 
     await Token.create({ userId: user._id, token: tokenStr, type: 'invitation' });
 
-    const domain = process.env.CLIENT_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const domain = getRequestDomain(req);
     await sendInvitationEmail(user.email, tokenStr, domain, designation);
 
     res.status(200).json({ message: 'Invitation sent' });
@@ -272,8 +279,20 @@ export const acceptInvitation = async (req, res, next) => {
     
     await tokenDoc.deleteOne();
     
-    res.status(200).json({ message: 'Account registered successfully. You can now login.' });
+// Get current authenticated user profile
+export const getMe = async (req, res, next) => {
+  try {
+    const user = req.user;
+    res.status(200).json({
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isEmailConfirmed: user.isEmailConfirmed
+    });
   } catch (error) {
     next(error);
   }
 };
+

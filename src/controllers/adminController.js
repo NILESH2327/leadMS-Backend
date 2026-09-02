@@ -23,6 +23,7 @@ export const getAllLeads = async (req, res, next) => {
 export const getAnalytics = async (req, res, next) => {
   try {
     // 1. User counts by role
+    const totalUsers = await User.countDocuments();
     const users = await User.aggregate([
       { $group: { _id: '$role', count: { $sum: 1 } } }
     ]);
@@ -52,7 +53,11 @@ export const getAnalytics = async (req, res, next) => {
     });
 
     res.status(200).json({
-      users: userStats,
+      users: {
+        total: totalUsers,
+        byRole: userStats,
+        ...userStats
+      },
       leads: {
         total: totalLeads,
         byStatus: leadStats
